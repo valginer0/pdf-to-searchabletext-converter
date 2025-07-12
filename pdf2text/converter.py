@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-from pdf2image import convert_from_path
+from pdf2image import convert_from_path, pdfinfo_from_path
 from PIL import Image
 import pytesseract
 
@@ -78,12 +78,27 @@ class PDFToTextConverter:
             raise FileNotFoundError(pdf_path)
 
         logger.info("Processing %s", pdf_path)
-        pages = convert_from_path(str(pdf_path), dpi=dpi)
-        logger.info("%d pages detected", len(pages))
+
+        # Get page count first to stream individually and save memory
+        info = pdfinfo_from_path(str(pdf_path))
+        total_pages: int = info.get("Pages", 0)  # type: ignore[arg-type]
+        if not total_pages:
+            raise RuntimeError("Could not determine page count for %s" % pdf_path)
+
+        # Optional tqdm progress bar
+        try:
+            from tqdm import tqdm  # type: ignore
+
+            page_iter = tqdm(range(1, total_pages + 1), desc="OCR")
+        except ImportError:  # pragma: no cover – optional
+            page_iter = range(1, total_pages + 1)
 
         text_chunks: List[str] = []
-        for idx, page_img in enumerate(pages, start=1):
-            logger.debug("Page %d/%d", idx, len(pages))
+        for idx in page_iter:
+            pages = convert_from_path(
+                str(pdf_path), dpi=dpi, first_page=idx, last_page=idx
+            )
+            page_img = pages[0]
             if enhance:
                 page_img = enhance_image(page_img)
             page_text = pytesseract.image_to_string(page_img, lang="eng")

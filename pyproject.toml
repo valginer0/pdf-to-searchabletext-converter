@@ -21,5 +21,8 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[project.optional-dependencies]
+progress = ["tqdm>=4.66"]
+
 [project.scripts]
 pdf2text = "pdf2text.cli:main"
