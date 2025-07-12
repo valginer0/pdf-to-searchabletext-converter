@@ -23,6 +23,7 @@ classifiers = [
 
 [project.optional-dependencies]
 progress = ["tqdm>=4.66"]
+rich = ["rich>=13.0"]
 
 [project.scripts]
 pdf2text = "pdf2text.cli:main"

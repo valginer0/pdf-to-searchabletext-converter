@@ -9,8 +9,30 @@ from pathlib import Path
 
 from .converter import PDFToTextConverter
 
-_LOG_FORMAT = "% (levelname)s: %(message)s"
-logging.basicConfig(level=logging.INFO, format=_LOG_FORMAT)
+# ---------------------------------------------------------------------------
+# Logging helpers
+# ---------------------------------------------------------------------------
+
+def _setup_logging(verbose: bool = False) -> None:  # noqa: D401
+    """Configure root logger.
+
+    If *rich* is installed, use its pretty handler; otherwise fallback to the
+    stdlib handler.
+    """
+
+    level = logging.DEBUG if verbose else logging.INFO
+
+    try:
+        from rich.logging import RichHandler  # type: ignore
+
+        logging.basicConfig(
+            level=level,
+            format="%(message)s",
+            datefmt="[%X]",
+            handlers=[RichHandler(rich_tracebacks=True, show_time=False)],
+        )
+    except ImportError:
+        logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -23,6 +45,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("-b", "--batch", action="store_true", help="Treat input as folder")
     p.add_argument("--tesseract-path", help="Path to tesseract executable")
     p.add_argument("--dpi", type=int, default=200, help="Image DPI (default: 200)")
+    p.add_argument("-v", "--verbose", action="store_true", help="Verbose / debug logging")
     p.add_argument("--enhance", action="store_true", help="Enhance images before OCR")
     return p
 
@@ -31,6 +54,8 @@ def main(argv: list[str] | None = None) -> None:  # noqa: D401
     """Program entry point (console-script)."""
     parser = build_parser()
     args = parser.parse_args(argv)
+
+    _setup_logging(args.verbose)
 
     converter = PDFToTextConverter(tesseract_path=args.tesseract_path)
 
