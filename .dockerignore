@@ -1,0 +1,38 @@
+.git
+.venv
+__pycache__
+.pytest_cache
+.cache
+cache
+model_cache
+test_data
+test_results
+tests/
+test_*.py
+htmlcov
+uploads
+.idea
+*.log
+*.pyc
+*.pkl
+*.ipynb
+*.docx
+*.DS_Store
+*.egg-info
+*.zone.identifier
+
+# Windows specific files
+*:Zone.Identifier
+*Zone.Identifier
+
+# Project specific
+archive.7z
+exclude.txt
+*.pdf
+# Exclude sample/input PDFs but keep code
+input/
+*_converted/
+output/
+
+# macOS metadata
+.DS_Store
