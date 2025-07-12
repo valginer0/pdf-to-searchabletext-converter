@@ -26,3 +26,12 @@ progress = ["tqdm>=4.66"]
 
 [project.scripts]
 pdf2text = "pdf2text.cli:main"
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I"]   # E=pycodestyle errors, F=pyflakes, I=isort
+ignore = ["E501"]              # handled by black or manual
+target-version = "py39"
+
+[tool.ruff.format]
+quote-style = """"  # preserve existing quoting
