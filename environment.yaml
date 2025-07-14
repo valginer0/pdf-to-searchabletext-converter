@@ -1,0 +1,11 @@
+name: pdf2text
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.9
+  - poppler
+  - tesseract
+  - pip
+  - pip:
+      - pdf2text[progress,rich]

@@ -7,13 +7,30 @@ Convert scanned PDF files into searchable plain-text using 100 % free and open-s
 ## Installation
 
 ```bash
-# Python ≥3.9
-pip install -e .            # from repo root (editable)  
-# OR install from PyPI (once published)
-# pip install pdf2text
+# End-users (from PyPI)
+pip install pdf2text
 
-# Optional progress bar support
-pip install "pdf2text[progress]"
+# From source (editable)
+pip install -e .
+
+# Optional extras
+pip install -e .[progress,rich]    # progress bar + rich logging
+**Why are these extras optional?**  `tqdm` (progress) and `rich` are great in
+  interactive terminals, but they add extra dependencies and ANSI control
+  sequences that can clutter plain log files.  Keeping them optional keeps the
+  core install lightweight, and lets you skip them in headless environments
+  (CI, Docker, systemd services) or when embedding `pdf2text` in another
+  application that provides its own UI.
+
+### Conda quick-start
+
+```bash
+# Everything in one go: Python, Poppler, Tesseract, pdf2text
+conda env create -f environment.yaml
+conda activate pdf2text
+
+# Optional editable/dev install for contributors
+pip install -e .[dev]
 ```
 
 System requirements:
@@ -60,6 +77,7 @@ text = conv.extract_text_from_pdf("scan.pdf", enhance=True)
 ## Development
 
 ```bash
-pip install -r requirements-dev.txt   # ruff, pytest, etc.
+# using pip / venv
+pip install -e .[dev]
+# or, if you used the Conda env above, just run:
 pytest -q
-```

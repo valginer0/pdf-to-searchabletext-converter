@@ -7,7 +7,7 @@ name = "pdf2text"
 version = "0.0.1"
 description = "Convert scanned PDF files to searchable text via Poppler and Tesseract"
 authors = [{ name = "Your Name", email = "you@example.com" }]
-readme = "README.md"
+readme = { file = "README.md", content-type = "text/markdown" }
 license = { text = "MIT" }
 requires-python = ">=3.9"
 dependencies = [
@@ -24,9 +24,18 @@ classifiers = [
 [project.optional-dependencies]
 progress = ["tqdm>=4.66"]
 rich = ["rich>=13.0"]
+# Development / contributor setup
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+    "build>=1.0",
+]
 
 [project.scripts]
 pdf2text = "pdf2text.cli:main"
+
+[tool.setuptools]
+packages = ["pdf2text"]
 
 [tool.ruff]
 line-length = 100
@@ -35,4 +44,4 @@ ignore = ["E501"]              # handled by black or manual
 target-version = "py39"
 
 [tool.ruff.format]
-quote-style = """"  # preserve existing quoting
+quote-style = "preserve"  # preserve existing quoting
