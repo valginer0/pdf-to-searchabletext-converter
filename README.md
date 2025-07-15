@@ -12,6 +12,18 @@ This project is licensed under the MIT License – see the [LICENSE](LICENSE) fi
 
 ## Installation
 
+### Via Docker
+
+```bash
+# build image
+docker build -t pdf2text .
+
+# convert a single PDF (mount a host folder)
+docker run --rm -v $(pwd)/data:/data pdf2text /data/sample.pdf -v
+```
+
+### From source
+
 ```bash
 # End-users (from PyPI)
 pip install pdf2text
