@@ -18,8 +18,13 @@ This project is licensed under the MIT License – see the [LICENSE](LICENSE) fi
 # build image
 docker build -t pdf2text .
 
-# convert a single PDF (mount a host folder)
-docker run --rm -v $(pwd)/data:/data pdf2text /data/sample.pdf -v
+# convert a single PDF (mount a host folder) and write the text next to it
+# The -o flag ensures the output ends up in the mounted folder.
+docker run --rm -v $(pwd)/data:/data pdf2text /data/sample.pdf -o /data/sample.txt -v
+
+# Alternatively mount the project root as the working directory so the default
+# output path works (the default WORKDIR inside the image is /app).
+docker run --rm -v $(pwd):/app -w /app pdf2text data/sample.pdf -v
 ```
 
 ### From source
