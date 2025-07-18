@@ -73,6 +73,9 @@ System requirements:
 # Convert a single file
 pdf2text input.pdf -o output.txt
 
+# Multi-language OCR (English + Spanish)
+pdf2text input.pdf --lang eng+spa -o output.txt
+
 # Batch convert all PDFs inside a folder
 pdf2text /path/to/folder -b -o /path/to/out_dir
 
@@ -89,7 +92,9 @@ pdf2text input.pdf --dpi 300 --enhance
 | `-b`, `--batch`     | Treat input as folder and process all PDFs     |
 | `--dpi`             | DPI for rasterisation (default 200)            |
 | `--enhance`         | Apply basic image enhancement before OCR       |
+| `--lang`            | Tesseract language codes (`eng`, `eng+deu`, …) |
 | `--tesseract-path`  | Path to `tesseract` executable (Windows)       |
+| `--version`         | Print program version and exit                |
 
 ## Python API
 
@@ -99,7 +104,7 @@ from pdf2text import PDFToTextConverter
 conv = PDFToTextConverter()
 # Traditional full-extract
 # Tip: pass `log_level=logging.DEBUG` to the constructor to enable verbose logging from library code (same as `-v` flag in the CLI).
-text = conv.extract_text_from_pdf("scan.pdf", enhance=True)
+text = conv.extract_text_from_pdf("scan.pdf", enhance=True, lang="eng+spa")
 
 # Stream pages one-by-one (memory-efficient for large PDFs)
 for page_num, page_text in conv.iter_pages("scan.pdf", enhance=True):
