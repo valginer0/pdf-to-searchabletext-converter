@@ -31,7 +31,13 @@ class PDFToTextConverter:
     into a reusable object-oriented API.
     """
 
-    def __init__(self, tesseract_path: Optional[str] = None, *, log_level: int | None = None):
+    def __init__(
+        self,
+        tesseract_path: Optional[str] = None,
+        *,
+        log_level: int | None = None,
+        tesseract_config: str = "--psm 1",
+    ):
         if tesseract_path:
             pytesseract.pytesseract.tesseract_cmd = tesseract_path
 
@@ -57,17 +63,21 @@ class PDFToTextConverter:
         if log_level is not None:
             logger.setLevel(log_level)
 
+        self._tess_config = tesseract_config
+
     def _render_page(self, pdf_path: Path, page_num: int, dpi: int) -> Image.Image:
         """Return a single page image rendered via pdf2image."""
         pages = convert_from_path(str(pdf_path), dpi=dpi, first_page=page_num, last_page=page_num)
         return pages[0]
 
-    def _ocr_page(self, img: Image.Image, *, enhance: bool = False, lang: str = "eng") -> str:
+    def _ocr_page(
+        self, img: Image.Image, *, enhance: bool = False, lang: str = "eng", config: str | None = None
+    ) -> str:
         """Run (optionally enhanced) OCR on *img* and return the extracted text."""
         if enhance:
             img = enhance_image(img)
-        # pytesseract stubs return `Any`; cast to str for typing sanity
-        return cast(str, pytesseract.image_to_string(img, lang=lang))
+        cfg = config if config is not None else self._tess_config
+        return cast(str, pytesseract.image_to_string(img, lang=lang, config=cfg))
 
     def _write_output(self, text: str, output_path: Path) -> None:
         output_path.write_text(text, encoding="utf-8")
@@ -84,6 +94,8 @@ class PDFToTextConverter:
         dpi: int = 200,
         enhance: bool = False,
         lang: str = "eng",
+        chunk_size: int = 1,
+        config: str | None = None,
     ) -> Iterator[tuple[int, str]]:
         """Yield ``(page_num, text)`` for each page, allowing callers to stream.
 
@@ -99,11 +111,19 @@ class PDFToTextConverter:
         if not total_pages:
             raise RuntimeError("Could not determine page count for %s" % pdf_path)
 
-        page_iter = range(1, total_pages + 1)
-        for idx in page_iter:
-            img = self._render_page(pdf_path, idx, dpi)
-            text = self._ocr_page(img, enhance=enhance, lang=lang)
-            yield idx, text
+        if chunk_size < 1:
+            chunk_size = 1
+
+        current = 1
+        while current <= total_pages:
+            end = min(current + chunk_size - 1, total_pages)
+            images = convert_from_path(
+                str(pdf_path), dpi=dpi, first_page=current, last_page=end
+            )
+            for offset, img in enumerate(images, start=current):
+                text = self._ocr_page(img, enhance=enhance, lang=lang, config=config)
+                yield offset, text
+            current += chunk_size
 
     # ---------------------------------------------------------------------
     # Async helper
@@ -178,6 +198,7 @@ class PDFToTextConverter:
         dpi: int = 200,
         enhance: bool = False,
         lang: str = "eng",
+        chunk_size: int = 1,
     ) -> str:
         """Extract text from a *single* PDF.
 
@@ -211,7 +232,7 @@ class PDFToTextConverter:
             page_iter = range(1, total_pages + 1)
 
         text_chunks: List[str] = []
-        for idx, page_text in self.iter_pages(pdf_path, dpi=dpi, enhance=enhance, lang=lang):
+        for idx, page_text in self.iter_pages(pdf_path, dpi=dpi, enhance=enhance, lang=lang, chunk_size=chunk_size):
             text_chunks.append(f"--- Page {idx} ---\n{page_text}\n")
 
         full_text = "\n".join(text_chunks)
@@ -228,6 +249,9 @@ class PDFToTextConverter:
         dpi: int = 200,
         enhance: bool = False,
         lang: str = "eng",
+        parallel: bool = False,
+        max_workers: int | None = None,
+        chunk_size: int = 1,
     ) -> int:
         """Convert every PDF in *input_folder*.
 
@@ -246,11 +270,28 @@ class PDFToTextConverter:
         expected_errors = (RuntimeError, FileNotFoundError)
 
         processed = 0
+        if parallel:
+            def _worker(path: Path) -> int:
+                conv = PDFToTextConverter()
+                dest = output_folder / f"{path.stem}.txt"
+                conv.extract_text_from_pdf(path, dest, dpi=dpi, enhance=enhance, lang=lang, chunk_size=chunk_size)
+                return 1
+
+            with ProcessPoolExecutor(max_workers=max_workers) as pool:
+                processed = sum(pool.map(_worker, pdf_files))
+            logger.info("Parallel batch conversion complete → %s (%d files)", output_folder, processed)
+            return processed
+
         for pdf_file in pdf_files:
             try:
                 dest_file = output_folder / f"{pdf_file.stem}.txt"
                 self.extract_text_from_pdf(
-                    pdf_file, dest_file, dpi=dpi, enhance=enhance, lang=lang
+                    pdf_file,
+                    dest_file,
+                    dpi=dpi,
+                    enhance=enhance,
+                    lang=lang,
+                    chunk_size=chunk_size,
                 )
             except expected_errors as exc:
                 # Log full stack in debug mode for easier diagnosis
