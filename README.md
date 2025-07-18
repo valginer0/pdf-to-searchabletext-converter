@@ -97,7 +97,16 @@ pdf2text input.pdf --dpi 300 --enhance
 from pdf2text import PDFToTextConverter
 
 conv = PDFToTextConverter()
+# Traditional full-extract
 text = conv.extract_text_from_pdf("scan.pdf", enhance=True)
+
+# Stream pages one-by-one (memory-efficient for large PDFs)
+for page_num, page_text in conv.iter_pages("scan.pdf", enhance=True):
+    print(page_num, len(page_text))
+
+# Asynchronous multi-core extraction
+import asyncio
+full_text = asyncio.run(conv.extract_text_async("scan.pdf"))
 ```
 
 ## Development
