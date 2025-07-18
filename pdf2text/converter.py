@@ -51,6 +51,21 @@ class PDFToTextConverter:
                 "Poppler not available. Install poppler-utils (or brew install poppler)."
             )
 
+    def _render_page(self, pdf_path: Path, page_num: int, dpi: int) -> Image.Image:
+        """Return a single page image rendered via pdf2image."""
+        pages = convert_from_path(str(pdf_path), dpi=dpi, first_page=page_num, last_page=page_num)
+        return pages[0]
+
+    def _ocr_page(self, img: Image.Image, enhance: bool = False) -> str:
+        """Run (optionally enhanced) OCR on *img* and return the extracted text."""
+        if enhance:
+            img = enhance_image(img)
+        return pytesseract.image_to_string(img, lang="eng")
+
+    def _write_output(self, text: str, output_path: Path) -> None:
+        output_path.write_text(text, encoding="utf-8")
+        logger.info("Wrote %s", output_path)
+
     # ---------------------------------------------------------------------
     # Public API
     # ---------------------------------------------------------------------
@@ -95,20 +110,14 @@ class PDFToTextConverter:
 
         text_chunks: List[str] = []
         for idx in page_iter:
-            pages = convert_from_path(
-                str(pdf_path), dpi=dpi, first_page=idx, last_page=idx
-            )
-            page_img = pages[0]
-            if enhance:
-                page_img = enhance_image(page_img)
-            page_text = pytesseract.image_to_string(page_img, lang="eng")
+            page_img = self._render_page(pdf_path, idx, dpi)
+            page_text = self._ocr_page(page_img, enhance=enhance)
             text_chunks.append(f"--- Page {idx} ---\n{page_text}\n")
 
         full_text = "\n".join(text_chunks)
 
         if output_path:
-            Path(output_path).write_text(full_text, encoding="utf-8")
-            logger.info("Wrote %s", output_path)
+            self._write_output(full_text, Path(output_path))
         return full_text
 
     def batch_convert(
