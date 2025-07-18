@@ -31,7 +31,7 @@ class PDFToTextConverter:
     into a reusable object-oriented API.
     """
 
-    def __init__(self, tesseract_path: Optional[str] = None):
+    def __init__(self, tesseract_path: Optional[str] = None, *, log_level: int | None = None):
         if tesseract_path:
             pytesseract.pytesseract.tesseract_cmd = tesseract_path
 
@@ -52,6 +52,10 @@ class PDFToTextConverter:
             raise RuntimeError(
                 "Poppler not available. Install poppler-utils (or brew install poppler)."
             )
+
+        # Allow callers to set per-instance logging verbosity
+        if log_level is not None:
+            logger.setLevel(log_level)
 
     def _render_page(self, pdf_path: Path, page_num: int, dpi: int) -> Image.Image:
         """Return a single page image rendered via pdf2image."""
@@ -237,14 +241,20 @@ class PDFToTextConverter:
         if not pdf_files:
             return
 
+        expected_errors = (RuntimeError, FileNotFoundError)
+
         for pdf_file in pdf_files:
             try:
                 dest_file = out_path / f"{pdf_file.stem}.txt"
                 self.extract_text_from_pdf(
                     pdf_file, dest_file, dpi=dpi, enhance=enhance
                 )
-            except Exception as exc:
-                logger.error("Failed processing %s: %s", pdf_file, exc)
+            except expected_errors as exc:
+                # Log full stack in debug mode for easier diagnosis
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Failed processing %s", pdf_file)
+                else:
+                    logger.error("Failed processing %s: %s", pdf_file, exc)
                 continue
 
         logger.info("Batch conversion complete → %s", out_path)

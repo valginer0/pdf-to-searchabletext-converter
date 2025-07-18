@@ -98,6 +98,7 @@ from pdf2text import PDFToTextConverter
 
 conv = PDFToTextConverter()
 # Traditional full-extract
+# Tip: pass `log_level=logging.DEBUG` to the constructor to enable verbose logging from library code (same as `-v` flag in the CLI).
 text = conv.extract_text_from_pdf("scan.pdf", enhance=True)
 
 # Stream pages one-by-one (memory-efficient for large PDFs)
