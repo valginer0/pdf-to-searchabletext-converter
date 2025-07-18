@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - `log_level` parameter in `PDFToTextConverter.__init__` for programmatic control of verbosity.
 - CLI flags `--lang` (multi-language OCR) and `--version`; converter APIs accept `lang`.
 - Exit codes: 0 success, 2 no files converted, ≥1 unexpected error.
+- Pre-commit configuration and Makefile targets for lint, test, build.
 
 ### Changed
 - `batch_convert` now logs full stack traces in debug mode and only catches specific expected errors, preventing silent failure of unrelated bugs.

@@ -127,7 +127,24 @@ import asyncio
 full_text = asyncio.run(conv.extract_text_async("scan.pdf"))
 ```
 
-## Development
+## Development / Contributing
+
+Clone the repo and set up the dev environment:
+
+```bash
+python -m venv .venv; source .venv/bin/activate  # or your preferred workflow
+pip install -r requirements-dev.txt
+
+# install pre-commit Git hooks (ruff, black, mypy, pytest run automatically)
+pre-commit install
+
+# run tasks
+make lint   # ruff + mypy
+make test   # pytest
+make build  # python -m build
+```
+
+CI mirrors these checks, so commits that pass hooks locally should pass remotely too.
 
 ```bash
 # using pip / venv
