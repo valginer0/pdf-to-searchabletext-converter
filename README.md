@@ -81,6 +81,15 @@ pdf2text /path/to/folder -b -o /path/to/out_dir
 
 # Higher resolution & progress bar
 pdf2text input.pdf --dpi 300 --enhance
+
+# Process N pages at once (speed↑, memory↑)
+pdf2text input.pdf --chunk-size 3 -o output.txt
+
+# Batch convert PDFs using all CPUs (use with `-b`)
+pdf2text /path/to/folder -b --parallel -o /path/to/out_dir
+
+# Limit workers for `--parallel`
+pdf2text /path/to/folder -b --parallel --max-workers 4 -o /path/to/out_dir
 ```
 
 ### Arguments
@@ -95,16 +104,19 @@ pdf2text input.pdf --dpi 300 --enhance
 | `--lang`            | Tesseract language codes (`eng`, `eng+deu`, …) |
 | `--tesseract-path`  | Path to `tesseract` executable (Windows)       |
 | `--version`         | Print program version and exit                |
+| `--chunk-size N`    | Process N pages at once (speed↑, memory↑)     |
+| `--parallel`        | Batch convert PDFs using all CPUs (use with `-b`) |
+| `--max-workers`     | Limit workers for `--parallel`                |
 
 ## Python API
 
 ```python
 from pdf2text import PDFToTextConverter
 
-conv = PDFToTextConverter()
+conv = PDFToTextConverter(tesseract_config="--psm 1")
 # Traditional full-extract
 # Tip: pass `log_level=logging.DEBUG` to the constructor to enable verbose logging from library code (same as `-v` flag in the CLI).
-text = conv.extract_text_from_pdf("scan.pdf", enhance=True, lang="eng+spa")
+text = conv.extract_text_from_pdf("scan.pdf", enhance=True, lang="eng+spa", chunk_size=3)
 
 # Stream pages one-by-one (memory-efficient for large PDFs)
 for page_num, page_text in conv.iter_pages("scan.pdf", enhance=True):

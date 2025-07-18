@@ -14,3 +14,6 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - `batch_convert` now logs full stack traces in debug mode and only catches specific expected errors, preventing silent failure of unrelated bugs.
+
+### Performance
+- new `tesseract_config` (reuse engine), `chunk_size` for multi-page rendering/OCR, and parallel `batch_convert`.
