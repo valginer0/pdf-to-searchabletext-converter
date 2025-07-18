@@ -102,3 +102,27 @@ def test_batch_convert(monkeypatch, tmp_path):
     assert [f.name for f in txt_files] == ["a.txt", "b.txt"]
     for f in txt_files:
         assert f.read_text() == "--- Page 1 ---\nHI\n"
+
+
+def test_iter_pages(monkeypatch, dummy_pdf: Path):
+    """iter_pages should yield sequential page numbers and text."""
+    dummy_img = Image.new("RGB", (10, 10))
+
+    monkeypatch.setattr(
+        "pdf2text.converter.convert_from_path", lambda *a, **kw: [dummy_img]
+    )
+    monkeypatch.setattr(
+        "pdf2text.converter.pdfinfo_from_path", lambda *a, **kw: {"Pages": 3}
+    )
+    monkeypatch.setattr(
+        "pdf2text.converter.pytesseract.image_to_string",
+        lambda *a, **kw: "P",  # constant char -> easy check
+    )
+    monkeypatch.setattr(
+        "pdf2text.converter.pytesseract.get_tesseract_version", lambda: "5.0"
+    )
+
+    conv = PDFToTextConverter()
+    pages = list(conv.iter_pages(dummy_pdf))
+
+    assert pages == [(1, "P"), (2, "P"), (3, "P")]

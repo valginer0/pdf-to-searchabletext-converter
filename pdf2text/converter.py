@@ -67,6 +67,38 @@ class PDFToTextConverter:
         logger.info("Wrote %s", output_path)
 
     # ---------------------------------------------------------------------
+    # Streaming generator
+    # ---------------------------------------------------------------------
+
+    def iter_pages(
+        self,
+        pdf_path: str | os.PathLike[str],
+        *,
+        dpi: int = 200,
+        enhance: bool = False,
+    ):
+        """Yield ``(page_num, text)`` for each page, allowing callers to stream.
+
+        This performs the same work as :py:meth:`extract_text_from_pdf` but
+        streams results instead of aggregating them, so large PDFs can be
+        processed incrementally.
+        """
+        pdf_path = Path(pdf_path)
+        if not pdf_path.exists():
+            raise FileNotFoundError(pdf_path)
+
+        info = pdfinfo_from_path(str(pdf_path))
+        total_pages: int = info.get("Pages", 0)  # type: ignore[arg-type]
+        if not total_pages:
+            raise RuntimeError("Could not determine page count for %s" % pdf_path)
+
+        page_iter = range(1, total_pages + 1)
+        for idx in page_iter:
+            img = self._render_page(pdf_path, idx, dpi)
+            text = self._ocr_page(img, enhance=enhance)
+            yield idx, text
+
+    # ---------------------------------------------------------------------
     # Public API
     # ---------------------------------------------------------------------
     def extract_text_from_pdf(
@@ -109,9 +141,7 @@ class PDFToTextConverter:
             page_iter = range(1, total_pages + 1)
 
         text_chunks: List[str] = []
-        for idx in page_iter:
-            page_img = self._render_page(pdf_path, idx, dpi)
-            page_text = self._ocr_page(page_img, enhance=enhance)
+        for idx, page_text in self.iter_pages(pdf_path, dpi=dpi, enhance=enhance):
             text_chunks.append(f"--- Page {idx} ---\n{page_text}\n")
 
         full_text = "\n".join(text_chunks)
