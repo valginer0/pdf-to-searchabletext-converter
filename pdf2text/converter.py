@@ -62,11 +62,11 @@ class PDFToTextConverter:
         pages = convert_from_path(str(pdf_path), dpi=dpi, first_page=page_num, last_page=page_num)
         return pages[0]
 
-    def _ocr_page(self, img: Image.Image, enhance: bool = False) -> str:
+    def _ocr_page(self, img: Image.Image, *, enhance: bool = False, lang: str = "eng") -> str:
         """Run (optionally enhanced) OCR on *img* and return the extracted text."""
         if enhance:
             img = enhance_image(img)
-        return pytesseract.image_to_string(img, lang="eng")
+        return pytesseract.image_to_string(img, lang=lang)
 
     def _write_output(self, text: str, output_path: Path) -> None:
         output_path.write_text(text, encoding="utf-8")
@@ -82,6 +82,7 @@ class PDFToTextConverter:
         *,
         dpi: int = 200,
         enhance: bool = False,
+        lang: str = "eng",
     ):
         """Yield ``(page_num, text)`` for each page, allowing callers to stream.
 
@@ -101,7 +102,7 @@ class PDFToTextConverter:
         page_iter = range(1, total_pages + 1)
         for idx in page_iter:
             img = self._render_page(pdf_path, idx, dpi)
-            text = self._ocr_page(img, enhance=enhance)
+            text = self._ocr_page(img, enhance=enhance, lang=lang)
             yield idx, text
 
     # ---------------------------------------------------------------------
@@ -109,7 +110,7 @@ class PDFToTextConverter:
     # ---------------------------------------------------------------------
 
     @staticmethod
-    def _process_page_worker(pdf_path: str, idx: int, dpi: int, enhance: bool) -> tuple[int, str]:
+    def _process_page_worker(pdf_path: str, idx: int, dpi: int, enhance: bool, lang: str) -> tuple[int, str]:
         """Helper for multiprocessing: render + OCR a single page."""
         from pdf2image import convert_from_path  # re-import for separate process
         from pdf2text.utils import enhance_image  # local import to avoid pickle issues
@@ -119,7 +120,7 @@ class PDFToTextConverter:
         img = pages[0]
         if enhance:
             img = enhance_image(img)
-        text = pytesseract.image_to_string(img, lang="eng")
+        text = pytesseract.image_to_string(img, lang=lang)
         return idx, text
 
     async def extract_text_async(
@@ -128,6 +129,7 @@ class PDFToTextConverter:
         *,
         dpi: int = 200,
         enhance: bool = False,
+        lang: str = "eng",
         max_workers: int | None = None,
         use_processes: bool = True,
     ) -> str:
@@ -154,6 +156,7 @@ class PDFToTextConverter:
                     idx,
                     dpi,
                     enhance,
+                    lang,
                 )
                 for idx in range(1, total_pages + 1)
             ]
@@ -173,6 +176,7 @@ class PDFToTextConverter:
         output_path: str | os.PathLike[str] | None = None,
         dpi: int = 200,
         enhance: bool = False,
+        lang: str = "eng",
     ) -> str:
         """Extract text from a *single* PDF.
 
@@ -207,7 +211,7 @@ class PDFToTextConverter:
             page_iter = range(1, total_pages + 1)
 
         text_chunks: List[str] = []
-        for idx, page_text in self.iter_pages(pdf_path, dpi=dpi, enhance=enhance):
+        for idx, page_text in self.iter_pages(pdf_path, dpi=dpi, enhance=enhance, lang=lang):
             text_chunks.append(f"--- Page {idx} ---\n{page_text}\n")
 
         full_text = "\n".join(text_chunks)
@@ -223,7 +227,8 @@ class PDFToTextConverter:
         file_extension: str = ".pdf",
         dpi: int = 200,
         enhance: bool = False,
-    ) -> None:
+        lang: str = "eng",
+    ) -> int:
         """Convert every PDF in *input_folder*.
 
         Each output file will have the same stem with ``.txt`` extension and be
@@ -239,15 +244,16 @@ class PDFToTextConverter:
         pdf_files = sorted(in_path.glob(f"*{file_extension}"))
         logger.info("%d files found in %s", len(pdf_files), in_path)
         if not pdf_files:
-            return
+            return 0
 
         expected_errors = (RuntimeError, FileNotFoundError)
 
+        processed = 0
         for pdf_file in pdf_files:
             try:
                 dest_file = out_path / f"{pdf_file.stem}.txt"
                 self.extract_text_from_pdf(
-                    pdf_file, dest_file, dpi=dpi, enhance=enhance
+                    pdf_file, dest_file, dpi=dpi, enhance=enhance, lang=lang
                 )
             except expected_errors as exc:
                 # Log full stack in debug mode for easier diagnosis
@@ -256,5 +262,7 @@ class PDFToTextConverter:
                 else:
                     logger.error("Failed processing %s: %s", pdf_file, exc)
                 continue
+            processed += 1
 
-        logger.info("Batch conversion complete → %s", out_path)
+        logger.info("Batch conversion complete → %s (%d files)", out_path, processed)
+        return processed

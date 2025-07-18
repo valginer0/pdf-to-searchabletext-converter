@@ -137,7 +137,7 @@ def test_extract_text_async(monkeypatch, dummy_pdf: Path):
     # Replace the worker to avoid spawn overhead
     monkeypatch.setattr(
         "pdf2text.converter.PDFToTextConverter._process_page_worker",
-        staticmethod(lambda path, idx, dpi, enhance: (idx, f"T{idx}")),
+        staticmethod(lambda path, idx, dpi, enhance, lang: (idx, f"T{idx}")),
     )
     monkeypatch.setattr(
         "pdf2text.converter.pytesseract.get_tesseract_version", lambda: "5.0"

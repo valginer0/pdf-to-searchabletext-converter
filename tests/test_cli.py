@@ -28,3 +28,9 @@ def test_cli_help_runs(monkeypatch):
     )
     assert res.returncode == 0
     assert "Convert scanned PDF files" in res.stdout
+
+    # version flag
+    ver = subprocess.run(
+        [sys.executable, "-m", "pdf2text.cli", "--version"], capture_output=True, text=True
+    )
+    assert ver.stdout.startswith("pdf2text ")
