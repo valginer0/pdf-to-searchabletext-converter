@@ -9,7 +9,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, cast, Iterator
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import asyncio
 
@@ -66,7 +66,8 @@ class PDFToTextConverter:
         """Run (optionally enhanced) OCR on *img* and return the extracted text."""
         if enhance:
             img = enhance_image(img)
-        return pytesseract.image_to_string(img, lang=lang)
+        # pytesseract stubs return `Any`; cast to str for typing sanity
+        return cast(str, pytesseract.image_to_string(img, lang=lang))
 
     def _write_output(self, text: str, output_path: Path) -> None:
         output_path.write_text(text, encoding="utf-8")
@@ -83,7 +84,7 @@ class PDFToTextConverter:
         dpi: int = 200,
         enhance: bool = False,
         lang: str = "eng",
-    ):
+    ) -> Iterator[tuple[int, str]]:
         """Yield ``(page_num, text)`` for each page, allowing callers to stream.
 
         This performs the same work as :py:meth:`extract_text_from_pdf` but
@@ -94,7 +95,7 @@ class PDFToTextConverter:
             raise FileNotFoundError(pdf_path)
 
         info = pdfinfo_from_path(str(pdf_path))
-        total_pages: int = info.get("Pages", 0)  # type: ignore[arg-type]
+        total_pages = int(info.get("Pages", 0))
         if not total_pages:
             raise RuntimeError("Could not determine page count for %s" % pdf_path)
 
@@ -109,7 +110,9 @@ class PDFToTextConverter:
     # ---------------------------------------------------------------------
 
     @staticmethod
-    def _process_page_worker(pdf_path: str, idx: int, dpi: int, enhance: bool, lang: str) -> tuple[int, str]:
+    def _process_page_worker(
+        pdf_path: str, idx: int, dpi: int, enhance: bool, lang: str
+    ) -> tuple[int, str]:
         """Helper for multiprocessing: render + OCR a single page."""
         from pdf2image import convert_from_path  # re-import for separate process
         from pdf2text.utils import enhance_image  # local import to avoid pickle issues
@@ -137,7 +140,7 @@ class PDFToTextConverter:
             raise FileNotFoundError(pdf_path)
 
         info = pdfinfo_from_path(str(pdf_path))
-        total_pages: int = info.get("Pages", 0)  # type: ignore[arg-type]
+        total_pages = int(info.get("Pages", 0))
         if not total_pages:
             raise RuntimeError("Could not determine page count for %s" % pdf_path)
 
@@ -195,13 +198,13 @@ class PDFToTextConverter:
 
         # Get page count first to stream individually and save memory
         info = pdfinfo_from_path(str(pdf_path))
-        total_pages: int = info.get("Pages", 0)  # type: ignore[arg-type]
+        total_pages = int(info.get("Pages", 0))
         if not total_pages:
             raise RuntimeError("Could not determine page count for %s" % pdf_path)
 
         # Optional tqdm progress bar
         try:
-            from tqdm import tqdm  # type: ignore
+            from tqdm import tqdm
 
             page_iter = tqdm(range(1, total_pages + 1), desc="OCR")
         except ImportError:  # pragma: no cover – optional

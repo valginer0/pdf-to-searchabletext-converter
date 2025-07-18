@@ -13,6 +13,6 @@ __all__ = [
 ]
 
 try:
-    __version__: str = _metadata.version("pdf2text")  # type: ignore[attr-defined]
+    __version__: str = _metadata.version("pdf2text")  
 except _metadata.PackageNotFoundError:  # running from source / editable install
     __version__ = "0.0.0.dev0"

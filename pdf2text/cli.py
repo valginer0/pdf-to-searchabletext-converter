@@ -13,7 +13,7 @@ from . import __version__
 # Logging helpers
 # ---------------------------------------------------------------------------
 
-def _setup_logging(verbose: bool = False) -> None:  # noqa: D401
+def _setup_logging(verbose: bool = False) -> None:  
     """Configure root logger.
 
     If *rich* is installed, use its pretty handler; otherwise fallback to the
@@ -23,7 +23,7 @@ def _setup_logging(verbose: bool = False) -> None:  # noqa: D401
     level = logging.DEBUG if verbose else logging.INFO
 
     try:
-        from rich.logging import RichHandler  # type: ignore
+        from rich.logging import RichHandler  
 
         logging.basicConfig(
             level=level,
@@ -52,7 +52,7 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
-def main(argv: list[str] | None = None) -> None:  # noqa: D401
+def main(argv: list[str] | None = None) -> None:  
     """Program entry point (console-script)."""
     parser = build_parser()
     args = parser.parse_args(argv)
