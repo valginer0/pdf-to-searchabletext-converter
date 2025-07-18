@@ -30,6 +30,7 @@ dev = [
     "ruff>=0.4",
     "build>=1.0",
     "pytest-mock>=3.14",
+    "mypy>=1.10",
 ]
 
 [project.scripts]
@@ -46,3 +47,10 @@ target-version = "py39"
 
 [tool.ruff.format]
 quote-style = "preserve"  # preserve existing quoting
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+ignore_missing_imports = true
+show_error_codes = true
+exclude = ["tests/"]

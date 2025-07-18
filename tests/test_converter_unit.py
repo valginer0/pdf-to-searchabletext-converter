@@ -52,11 +52,13 @@ def test_extract_text_basic(monkeypatch, dummy_pdf: Path, tmp_path: Path):
 
 
 def test_file_not_found(monkeypatch):
+    import os
+    from pathlib import Path
     monkeypatch.setattr(
         "pdf2text.converter.pytesseract.get_tesseract_version", lambda: "5.0"
     )
     with pytest.raises(FileNotFoundError):
-        PDFToTextConverter().extract_text_from_pdf("not_there.pdf")
+        PDFToTextConverter().extract_text_from_pdf(Path("not_there.pdf"))
 
 
 def test_missing_tesseract(monkeypatch, tmp_path):

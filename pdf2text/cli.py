@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import logging
-import sys
 from pathlib import Path
 
 from .converter import PDFToTextConverter
@@ -64,18 +63,17 @@ def main(argv: list[str] | None = None) -> None:  # noqa: D401
 
     try:
         if args.batch:
-            out_dir = args.output or f"{args.input}_converted"
+            in_path = Path(args.input)
+            out_dir = Path(args.output) if args.output else Path(f"{args.input}_converted")
             exit_code = converter.batch_convert(
-                args.input, out_dir, dpi=args.dpi, enhance=args.enhance, lang=args.lang
+                in_path, out_dir, dpi=args.dpi, enhance=args.enhance, lang=args.lang
             )
             sys.exit(0 if exit_code else 2)  # 2 => nothing to do
         else:
-            output = (
-                args.output
-                or f"{Path(args.input).with_suffix('').name}.txt"  # derive if missing
-            )
+            input_pdf = Path(args.input)
+            output = Path(args.output) if args.output else input_pdf.with_suffix(".txt")
             converter.extract_text_from_pdf(
-                args.input, output, dpi=args.dpi, enhance=args.enhance, lang=args.lang
+                input_pdf, output, dpi=args.dpi, enhance=args.enhance, lang=args.lang
             )
     except Exception as exc:
         logging.error("Error: %s", exc)
@@ -84,4 +82,5 @@ def main(argv: list[str] | None = None) -> None:  # noqa: D401
 
 
 if __name__ == "__main__":  # pragma: no cover
+    import sys
     main(sys.argv[1:])

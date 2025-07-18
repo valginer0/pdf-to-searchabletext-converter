@@ -78,7 +78,7 @@ class PDFToTextConverter:
 
     def iter_pages(
         self,
-        pdf_path: str | os.PathLike[str],
+        pdf_path: Path,
         *,
         dpi: int = 200,
         enhance: bool = False,
@@ -90,7 +90,6 @@ class PDFToTextConverter:
         streams results instead of aggregating them, so large PDFs can be
         processed incrementally.
         """
-        pdf_path = Path(pdf_path)
         if not pdf_path.exists():
             raise FileNotFoundError(pdf_path)
 
@@ -125,7 +124,7 @@ class PDFToTextConverter:
 
     async def extract_text_async(
         self,
-        pdf_path: str | os.PathLike[str],
+        pdf_path: Path,
         *,
         dpi: int = 200,
         enhance: bool = False,
@@ -134,7 +133,6 @@ class PDFToTextConverter:
         use_processes: bool = True,
     ) -> str:
         """Asynchronously extract full text using a process (or thread) pool."""
-        pdf_path = Path(pdf_path)
         if not pdf_path.exists():
             raise FileNotFoundError(pdf_path)
 
@@ -172,8 +170,8 @@ class PDFToTextConverter:
     # ---------------------------------------------------------------------
     def extract_text_from_pdf(
         self,
-        pdf_path: str | os.PathLike[str],
-        output_path: str | os.PathLike[str] | None = None,
+        pdf_path: Path,
+        output_path: Path | None = None,
         dpi: int = 200,
         enhance: bool = False,
         lang: str = "eng",
@@ -182,15 +180,14 @@ class PDFToTextConverter:
 
         Parameters
         ----------
-        pdf_path : str | Path
-        output_path : str | Path | None
+        pdf_path : Path
+        output_path : Path | None
             If provided, write the text to this file.
         dpi : int, default 200
             Rendering resolution for ``pdf2image``; higher == slower but clearer.
         enhance : bool, default ``False``
             If *True* run simple image-processing steps before OCR.
         """
-        pdf_path = Path(pdf_path)
         if not pdf_path.exists():
             raise FileNotFoundError(pdf_path)
 
@@ -217,13 +214,13 @@ class PDFToTextConverter:
         full_text = "\n".join(text_chunks)
 
         if output_path:
-            self._write_output(full_text, Path(output_path))
+            self._write_output(full_text, output_path)
         return full_text
 
     def batch_convert(
         self,
-        input_folder: str | os.PathLike[str],
-        output_folder: str | os.PathLike[str],
+        input_folder: Path,
+        output_folder: Path,
         file_extension: str = ".pdf",
         dpi: int = 200,
         enhance: bool = False,
@@ -234,15 +231,12 @@ class PDFToTextConverter:
         Each output file will have the same stem with ``.txt`` extension and be
         written to *output_folder*.
         """
-        in_path = Path(input_folder)
-        out_path = Path(output_folder)
+        if not input_folder.exists():
+            raise FileNotFoundError(input_folder)
+        output_folder.mkdir(parents=True, exist_ok=True)
 
-        if not in_path.exists():
-            raise FileNotFoundError(in_path)
-        out_path.mkdir(parents=True, exist_ok=True)
-
-        pdf_files = sorted(in_path.glob(f"*{file_extension}"))
-        logger.info("%d files found in %s", len(pdf_files), in_path)
+        pdf_files = sorted(input_folder.glob(f"*{file_extension}"))
+        logger.info("%d files found in %s", len(pdf_files), input_folder)
         if not pdf_files:
             return 0
 
@@ -251,7 +245,7 @@ class PDFToTextConverter:
         processed = 0
         for pdf_file in pdf_files:
             try:
-                dest_file = out_path / f"{pdf_file.stem}.txt"
+                dest_file = output_folder / f"{pdf_file.stem}.txt"
                 self.extract_text_from_pdf(
                     pdf_file, dest_file, dpi=dpi, enhance=enhance, lang=lang
                 )
@@ -264,5 +258,5 @@ class PDFToTextConverter:
                 continue
             processed += 1
 
-        logger.info("Batch conversion complete → %s (%d files)", out_path, processed)
+        logger.info("Batch conversion complete → %s (%d files)", output_folder, processed)
         return processed
