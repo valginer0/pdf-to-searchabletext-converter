@@ -11,9 +11,9 @@ readme = { file = "README.md", content-type = "text/markdown" }
 license = { text = "MIT" }
 requires-python = ">=3.9"
 dependencies = [
-    "pdf2image>=1.16",
-    "pytesseract>=0.3",
-    "Pillow>=10.0",
+    "pdf2image>=1.16,<2.0",
+    "pytesseract>=0.3,<1.0",
+    "Pillow>=10.0,<11.0",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -24,6 +24,7 @@ classifiers = [
 [project.optional-dependencies]
 progress = ["tqdm>=4.66"]
 rich = ["rich>=13.0"]
+fast = ["pillow-simd>=10.0"]
 # Development / contributor setup
 dev = [
     "pytest>=8.0",
