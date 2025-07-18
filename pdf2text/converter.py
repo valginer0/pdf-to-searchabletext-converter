@@ -273,8 +273,15 @@ class PDFToTextConverter:
         if parallel:
             def _worker(path: Path) -> int:
                 conv = PDFToTextConverter()
-                dest = output_folder / f"{path.stem}.txt"
-                conv.extract_text_from_pdf(path, dest, dpi=dpi, enhance=enhance, lang=lang, chunk_size=chunk_size)
+                dest = conv._safe_join(output_folder, f"{path.stem}.txt")
+                conv.extract_text_from_pdf(
+                    path,
+                    dest,
+                    dpi=dpi,
+                    enhance=enhance,
+                    lang=lang,
+                    chunk_size=chunk_size,
+                )
                 return 1
 
             with ProcessPoolExecutor(max_workers=max_workers) as pool:
@@ -284,7 +291,7 @@ class PDFToTextConverter:
 
         for pdf_file in pdf_files:
             try:
-                dest_file = output_folder / f"{pdf_file.stem}.txt"
+                dest_file = self._safe_join(output_folder, f"{pdf_file.stem}.txt")
                 self.extract_text_from_pdf(
                     pdf_file,
                     dest_file,
@@ -304,3 +311,17 @@ class PDFToTextConverter:
 
         logger.info("Batch conversion complete → %s (%d files)", output_folder, processed)
         return processed
+
+    @staticmethod
+    def _safe_join(base: Path, *paths: str) -> Path:
+        """Return *base/paths* resolved, ensuring the result is within *base*.
+
+        Raises ``ValueError`` if the resulting path escapes *base* via ``..`` tricks.
+        """
+        root = base.resolve()
+        candidate = root.joinpath(*paths).resolve()
+        try:
+            candidate.relative_to(root)
+        except ValueError as exc:
+            raise ValueError(f"Path {candidate} is outside {base}") from exc
+        return candidate

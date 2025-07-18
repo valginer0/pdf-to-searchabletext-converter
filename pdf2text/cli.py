@@ -9,6 +9,8 @@ from pathlib import Path
 from .converter import PDFToTextConverter
 from . import __version__
 
+__all__ = ["main", "build_parser"]
+
 # ---------------------------------------------------------------------------
 # Logging helpers
 # ---------------------------------------------------------------------------

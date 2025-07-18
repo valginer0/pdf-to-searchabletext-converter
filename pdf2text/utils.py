@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from PIL import Image, ImageEnhance, ImageFilter
 
+__all__ = ["enhance_image"]
 
 def enhance_image(image: Image.Image, contrast: float = 2.0, sharpness: float = 2.0) -> Image.Image:
     """Return an enhanced grayscale image for better OCR.
