@@ -5,6 +5,7 @@ import pytest
 from PIL import Image
 
 from pdf2text.converter import PDFToTextConverter
+import asyncio
 
 
 def _fake_pdf_bytes():
@@ -126,3 +127,23 @@ def test_iter_pages(monkeypatch, dummy_pdf: Path):
     pages = list(conv.iter_pages(dummy_pdf))
 
     assert pages == [(1, "P"), (2, "P"), (3, "P")]
+
+
+def test_extract_text_async(monkeypatch, dummy_pdf: Path):
+    """Async extraction should compose pages in correct order using mocks."""
+    monkeypatch.setattr(
+        "pdf2text.converter.pdfinfo_from_path", lambda *a, **kw: {"Pages": 2}
+    )
+    # Replace the worker to avoid spawn overhead
+    monkeypatch.setattr(
+        "pdf2text.converter.PDFToTextConverter._process_page_worker",
+        staticmethod(lambda path, idx, dpi, enhance: (idx, f"T{idx}")),
+    )
+    monkeypatch.setattr(
+        "pdf2text.converter.pytesseract.get_tesseract_version", lambda: "5.0"
+    )
+
+    conv = PDFToTextConverter()
+    out = asyncio.run(conv.extract_text_async(dummy_pdf, use_processes=False))
+
+    assert out == "--- Page 1 ---\nT1\n\n--- Page 2 ---\nT2\n"

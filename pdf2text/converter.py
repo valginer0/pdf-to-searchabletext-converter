@@ -10,6 +10,8 @@ import os
 import sys
 from pathlib import Path
 from typing import List, Optional
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+import asyncio
 
 from pdf2image import convert_from_path, pdfinfo_from_path
 from PIL import Image
@@ -97,6 +99,66 @@ class PDFToTextConverter:
             img = self._render_page(pdf_path, idx, dpi)
             text = self._ocr_page(img, enhance=enhance)
             yield idx, text
+
+    # ---------------------------------------------------------------------
+    # Async helper
+    # ---------------------------------------------------------------------
+
+    @staticmethod
+    def _process_page_worker(pdf_path: str, idx: int, dpi: int, enhance: bool) -> tuple[int, str]:
+        """Helper for multiprocessing: render + OCR a single page."""
+        from pdf2image import convert_from_path  # re-import for separate process
+        from pdf2text.utils import enhance_image  # local import to avoid pickle issues
+        import pytesseract
+
+        pages = convert_from_path(pdf_path, dpi=dpi, first_page=idx, last_page=idx)
+        img = pages[0]
+        if enhance:
+            img = enhance_image(img)
+        text = pytesseract.image_to_string(img, lang="eng")
+        return idx, text
+
+    async def extract_text_async(
+        self,
+        pdf_path: str | os.PathLike[str],
+        *,
+        dpi: int = 200,
+        enhance: bool = False,
+        max_workers: int | None = None,
+        use_processes: bool = True,
+    ) -> str:
+        """Asynchronously extract full text using a process (or thread) pool."""
+        pdf_path = Path(pdf_path)
+        if not pdf_path.exists():
+            raise FileNotFoundError(pdf_path)
+
+        info = pdfinfo_from_path(str(pdf_path))
+        total_pages: int = info.get("Pages", 0)  # type: ignore[arg-type]
+        if not total_pages:
+            raise RuntimeError("Could not determine page count for %s" % pdf_path)
+
+        loop = asyncio.get_running_loop()
+        ExecutorCls = ProcessPoolExecutor if use_processes else ThreadPoolExecutor
+
+        results: List[tuple[int, str]] = []
+        with ExecutorCls(max_workers=max_workers) as pool:
+            tasks = [
+                loop.run_in_executor(
+                    pool,
+                    PDFToTextConverter._process_page_worker,
+                    str(pdf_path),
+                    idx,
+                    dpi,
+                    enhance,
+                )
+                for idx in range(1, total_pages + 1)
+            ]
+            for coro in asyncio.as_completed(tasks):
+                results.append(await coro)
+
+        # sort by page number and compose
+        results.sort(key=lambda t: t[0])
+        return "\n".join(f"--- Page {idx} ---\n{text}\n" for idx, text in results)
 
     # ---------------------------------------------------------------------
     # Public API
