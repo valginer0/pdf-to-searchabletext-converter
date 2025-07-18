@@ -15,16 +15,19 @@ This project is licensed under the MIT License – see the [LICENSE](LICENSE) fi
 ### Via Docker
 
 ```bash
-# build image
+# Option A – build the image locally
 docker build -t pdf2text .
+
+# Option B – pull the latest pre-built image from GHCR
+docker pull ghcr.io/valginer0/pdf2text:latest
 
 # convert a single PDF (mount a host folder) and write the text next to it
 # The -o flag ensures the output ends up in the mounted folder.
-docker run --rm -v $(pwd)/data:/data pdf2text /data/sample.pdf -o /data/sample.txt -v
+docker run --rm -v $(pwd)/data:/data ghcr.io/valginer0/pdf2text:latest /data/sample.pdf -o /data/sample.txt -v
 
 # Alternatively mount the project root as the working directory so the default
 # output path works (the default WORKDIR inside the image is /app).
-docker run --rm -v $(pwd):/app -w /app pdf2text data/sample.pdf -v
+docker run --rm -v $(pwd):/app -w /app ghcr.io/valginer0/pdf2text:latest data/sample.pdf -v
 ```
 
 ### From source
