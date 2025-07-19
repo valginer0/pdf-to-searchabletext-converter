@@ -1,4 +1,5 @@
 # pdf2text
+[![PyPI](https://img.shields.io/pypi/v/pdf2text-ocr.svg)](https://pypi.org/project/pdf2text-ocr/)
 
 Convert scanned PDF files into searchable plain-text using 100 % free and open-source software (Poppler + Tesseract).
 
@@ -34,7 +35,7 @@ docker run --rm -v $(pwd):/app -w /app ghcr.io/valginer0/pdf2text:latest data/sa
 
 ```bash
 # End-users (from PyPI)
-pip install pdf2text
+pip install pdf2text-ocr
 
 # From source (editable)
 pip install -e .

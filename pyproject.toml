@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdf2text-ocr"
-version = "0.1.0"
+version = "0.1.1"
 description = "Convert scanned PDF files to searchable text via Poppler and Tesseract"
-authors = [{ name = "Your Name", email = "you@example.com" }]
+authors = [{ name = "Valery Giner", email = "ginerv@yahoo.com" }]
 readme = { file = "README.md", content-type = "text/markdown" }
 license = { text = "MIT" }
 requires-python = ">=3.9"
