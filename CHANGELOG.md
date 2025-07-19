@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [0.1.1] - 2025-07-18
 ### Added
 - First public release on PyPI under the name **pdf2text-ocr** (PyPI namespace `pdf2text` was taken).
-- Multi-language OCR, chunked processing, parallel batch mode, `pdf2text` CLI, Docker image.
+- Multi-language OCR, chunked processing, parallel batch mode, `pdf2text` CLI, Docker image (Docker repo renamed to `pdf2text-ocr`).
 
 ## Unreleased
 ### Added
